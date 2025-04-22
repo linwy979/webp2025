@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <title>景點觀光展覽資訊</title>
+  <style>
+    table {
+      font-family: Arial, Helvetica, sans-serif;
+      border-collapse: collapse;
+      width: 100%;
+    }
+
+    td, th {
+      border: 1px solid #ddd;
+      padding: 12px;
+      line-height: 1.5;
+    }
+
+    tr:nth-child(even) {
+      background-color: #f2f2f2;
+    }
+
+    tr:hover {
+      background-color: #ddd;
+    }
+
+    th {
+      padding-top: 16px;
+      padding-bottom: 16px;
+      text-align: left;
+      background-color: #04AA6D;
+      color: white;
+    }
+
+    tr:nth-child(2) td {
+      padding-top: 16px;
+      padding-bottom: 16px;
+    }
+
+    .pagination {
+      margin-top: 20px;
+    }
+
+    button {
+      margin: 5px;
+    }
+  </style>
+</head>
+<body>
+
+<h1>景點觀光展覽資訊</h1>
+
+<label for="search">搜尋名稱：</label>
+<input type="text" id="search" placeholder="請輸入關鍵字..." onchange="filterData()">
+
+<table id="csie" class="table table-striped table-hover">
+  <thead>
+    <tr>
+      <th>名稱</th>
+      <th>地點</th>
+      <th>標價</th>
+    </tr>
+  </thead>
+  <tbody>
+    <!-- JS 動態插入資料 -->
+  </tbody>
+</table>
+
+<div class="pagination">
+  <button onclick="prevPage()" id="prevBtn">上一頁</button>
+  <span id="pageInfo">第 1 頁 / 共 1 頁</span>
+  <button onclick="nextPage()" id="nextBtn">下一頁</button>
+</div>
+
+<button onclick="delOldData()">delOldData</button>
+
+<script>
+  var openUrl = "https://cloud.culture.tw/frontsite/trans/SearchShowAction.do?method=doFindTypeJ&category=6";
+
+  let allData = [];       // 所有資料
+  let filteredData = [];  // 篩選後的資料
+  let currentPage = 1;
+  const rowsPerPage = 10;
+
+  // 取得資料
+  var xhr = new XMLHttpRequest();
+  xhr.open('GET', openUrl, true);
+  xhr.send();
+
+  xhr.onreadystatechange = function () {
+    if (this.readyState === 4 && this.status === 200) {
+      allData = JSON.parse(this.responseText);
+      filteredData = [...allData];
+      displayTable();
+    }
+  };
+
+  // 顯示資料表格
+  function displayTable() {
+    const tbody = document.querySelector("#csie tbody");
+    tbody.innerHTML = ""; // 先清空
+
+    const start = (currentPage - 1) * rowsPerPage;
+    const end = start + rowsPerPage;
+    const pageData = filteredData.slice(start, end);
+
+    pageData.forEach(data => {
+      const row = tbody.insertRow(-1);
+      row.insertCell(0).innerText = data.title;
+      row.insertCell(1).innerText = data.showInfo[0]?.location || "無地點";
+      row.insertCell(2).innerText = data.showInfo[0]?.price || "免費/無票價資訊";
+    });
+
+    updatePagination();
+  }
+
+  // 更新頁數資訊與按鈕
+  function updatePagination() {
+    const totalPages = Math.ceil(filteredData.length / rowsPerPage);
+    document.getElementById("pageInfo").innerText = `第 ${currentPage} 頁 / 共 ${totalPages} 頁`;
+    document.getElementById("prevBtn").disabled = currentPage === 1;
+    document.getElementById("nextBtn").disabled = currentPage >= totalPages;
+  }
+
+  function prevPage() {
+    if (currentPage > 1) {
+      currentPage--;
+      displayTable();
+    }
+  }
+
+  function nextPage() {
+    const totalPages = Math.ceil(filteredData.length / rowsPerPage);
+    if (currentPage < totalPages) {
+      currentPage++;
+      displayTable();
+    }
+  }
+
+  // 名稱搜尋
+  function filterData() {
+    const keyword = document.getElementById("search").value.trim().toLowerCase();
+    filteredData = allData.filter(item => item.title.toLowerCase().includes(keyword));
+    currentPage = 1;
+    displayTable();
+  }
+
+  // 清除資料列
+  function delOldData() {
+    const tbody = document.querySelector("#csie tbody");
+    tbody.innerHTML = "";
+    currentPage = 1;
+    filteredData = [];
+    updatePagination();
+  }
+</script>
+
+</body>
+</html>
